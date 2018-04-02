@@ -15,7 +15,7 @@
 
 int main()
 {
-	int i, j, k;
+	int i, j, k, l;
 	std::string filename;
 	//std::cout << "input the file name here: " << std::endl;
 	//std::getline(std::cin, filename, '\n');
