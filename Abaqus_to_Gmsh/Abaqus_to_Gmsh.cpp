@@ -20,7 +20,7 @@ int main()
 	std::string filename;
 	//std::cout << "input the file name here: " << std::endl;
 	//std::getline(std::cin, filename, '\n');
-	filename = "DDG_cuboid_fluidomain_6.01draft.inp";
+	filename = "FSP_1ftbasemesh.inp";
 	std::ifstream infile;
 	infile.open(filename);
 	if (!infile) {
@@ -39,6 +39,7 @@ int main()
 	int nodeend = 0;
 	int elestart = 0;
 	int eleend = 0;
+
 	while (getline(infile, csvLine))
 	{
 		ct = ct + 1; //the current line number (starting from 0)
@@ -53,20 +54,23 @@ int main()
 		}
 		output.push_back(csvColumn);
 
-		if (csvColumn[0] == "*NODE") {
+		if (csvColumn[0] == "*NODE" || csvColumn[0] == "*Node") {
 			nodestart = ct + 1; //the node starts from the next line
 		}
-		if (csvColumn[0] == "*ELEMENT") {
+		if (csvColumn[0] == "*ELEMENT" || csvColumn[0] == "*Element") {
 			nodeend = ct - 3; //the line where the node definition ends
 			elestart = ct + 1; //the line where element definition starts
 		}
 		if (csvColumn[0] == "********************************** S I D E S E T S **********************************") {
 			eleend = ct - 2; //the line where element definition ends
 		}
-		if (csvColumn[0] == "*ELSET") {
+		if (csvColumn[0] == "*End Part") {
+			eleend = ct - 1; //the line where element definition ends
+		}
+		if (csvColumn[0] == "*ELSET" || csvColumn[0] == "*Elset") {
 			sidesets_start.push_back(ct + 1); //the line where sidesets (physical group) definition starts
 		}
-		if (csvColumn[0] == "*SURFACE") {
+		if (csvColumn[0] == "*SURFACE" || csvColumn[0] == "*Surface") {
 			sidesets_end.push_back(ct - 1); //the line where sidesets (physical group) definition ends
 		}
 		std::cout << ct << std::endl;
@@ -96,17 +100,25 @@ int main()
 		}
 	}
 
-	//output sidesets elements
+	//Store sidesets (physical group) elements
 	int num_sidesets = sidesets_start.size();
 	std::vector<std::vector<int>> sideset_ELE;
 	for (i = 0; i < num_sidesets; i++) {
 		std::vector<int> sideset_column;
-		for (j = sidesets_start[i]; j < sidesets_end[i] + 1; j++) {
-			for (k = 0; k < output[j].size(); k++) {
-				sideset_column.push_back(stoi(output[j][k]));
+		for (j = sidesets_start[i]; j < sidesets_end[i] + 1; j++) { //lines corresponding to the physical group i 
+			//if (output[j].size == 3 && sidesets_end[i] == sidesets_start[i]) { //the element number is expressed as initial,end,internal way (only one line is used) 
+			if (sidesets_end[i] == sidesets_start[i]) {
+				for (k = stoi(output[j][0]); k < stoi(output[j][1]) + 1; k += stoi(output[j][2])) {
+					sideset_column.push_back(k);
+				}
+			}
+			else {
+				for (k = 0; k < output[j].size(); k++) { //store all members (k) in the line
+					sideset_column.push_back(stoi(output[j][k]));
+				}
 			}
 		}
-		sideset_ELE.push_back(sideset_column);
+		sideset_ELE.push_back(sideset_column); //Each sideset_column represents one physical group
 	}
 
 	//write Gmsh output file
@@ -136,18 +148,51 @@ int main()
 	totalele += NEL;
 	outfile << totalele << std::endl;
 	ct = 1;
-	for (i = 0; i < num_sidesets; i++) { //different physical groups (quad element)
+	for (i = 0; i < num_sidesets; i++) { //different physical groups (3 stands for quad element)
 		for (j = 0; j < sideset_ELE[i].size(); j++) { //loop through each element in the physical groups
 			outfile << ct << " " << 3 << " " << 2 << " " << i + 1 << " " << 0 << " ";
-			for (k = 4; k < 8; k++) { //Get the last four nodes in the element (assuming surface S2 in Abaqus input file (corresponding to the last four number in the element connectivity matrix), counter-clockwise)
-				outfile << IEN[sideset_ELE[i][j] - 1][k] << " ";
+			if (output[sidesets_end[i] + 2][1] == " S1") { //If the surface is S1
+				outfile << IEN[sideset_ELE[i][j] - 1][0] << " ";
+				outfile << IEN[sideset_ELE[i][j] - 1][1] << " ";
+				outfile << IEN[sideset_ELE[i][j] - 1][2] << " ";
+				outfile << IEN[sideset_ELE[i][j] - 1][3] << " ";
+			}
+			else if (output[sidesets_end[i] + 2][1] == " S2") { //If the surface is S2 
+				outfile << IEN[sideset_ELE[i][j] - 1][4] << " ";
+				outfile << IEN[sideset_ELE[i][j] - 1][5] << " ";
+				outfile << IEN[sideset_ELE[i][j] - 1][6] << " ";
+				outfile << IEN[sideset_ELE[i][j] - 1][7] << " ";
+			}
+			else if (output[sidesets_end[i] + 2][1] == " S3") { //If the surface is S3
+				outfile << IEN[sideset_ELE[i][j] - 1][4] << " ";
+				outfile << IEN[sideset_ELE[i][j] - 1][0] << " ";
+				outfile << IEN[sideset_ELE[i][j] - 1][1] << " ";
+				outfile << IEN[sideset_ELE[i][j] - 1][5] << " ";
+			}
+			else if (output[sidesets_end[i] + 2][1] == " S4") { //If the surface is S4
+				outfile << IEN[sideset_ELE[i][j] - 1][5] << " ";
+				outfile << IEN[sideset_ELE[i][j] - 1][1] << " ";
+				outfile << IEN[sideset_ELE[i][j] - 1][2] << " ";
+				outfile << IEN[sideset_ELE[i][j] - 1][6] << " ";
+			}
+			else if (output[sidesets_end[i] + 2][1] == " S5") { //If the surface is S5
+				outfile << IEN[sideset_ELE[i][j] - 1][7] << " ";
+				outfile << IEN[sideset_ELE[i][j] - 1][6] << " ";
+				outfile << IEN[sideset_ELE[i][j] - 1][2] << " ";
+				outfile << IEN[sideset_ELE[i][j] - 1][3] << " ";
+			}
+			else if (output[sidesets_end[i] + 2][1] == " S6") { //If the surface is S6
+				outfile << IEN[sideset_ELE[i][j] - 1][4] << " ";
+				outfile << IEN[sideset_ELE[i][j] - 1][7] << " ";
+				outfile << IEN[sideset_ELE[i][j] - 1][3] << " ";
+				outfile << IEN[sideset_ELE[i][j] - 1][0] << " ";
 			}
 			ct += 1;
 			outfile << std::endl;
 		}
 	}
-	//write elements (the whole domain)
-	for (i = 0; i < NEL; i++) {
+	//write elements (the whole domain, the last physical group)
+	for (i = 0; i < NEL; i++) { //5 stands for hexahedral element
 		outfile << ct << " " << 5 << " " << 2 << " " << num_sidesets + 1 << " " << 0 << " ";
 		for (j = 0; j < 8; j++) {
 			outfile << IEN[i][j] << " ";
@@ -158,4 +203,3 @@ int main()
 	outfile << "$EndElements" << std::endl;
     return 0;
 }
-
