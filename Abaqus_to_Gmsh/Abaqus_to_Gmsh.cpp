@@ -8,6 +8,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <locale>
 #include <sstream>
 #include <vector>
 
@@ -20,7 +21,7 @@ int main()
 	std::string filename;
 	//std::cout << "input the file name here: " << std::endl;
 	//std::getline(std::cin, filename, '\n');
-	filename = "FSP_1ftbasemesh.inp";
+	filename = "DDG_3ftbasemesh.inp";
 	std::ifstream infile;
 	infile.open(filename);
 	if (!infile) {
@@ -53,29 +54,49 @@ int main()
 			csvColumn.push_back(csvElement);
 		}
 		output.push_back(csvColumn);
-
 		if (csvColumn[0] == "*NODE" || csvColumn[0] == "*Node") {
 			nodestart = ct + 1; //the node starts from the next line
 		}
 		if (csvColumn[0] == "*ELEMENT" || csvColumn[0] == "*Element") {
-			nodeend = ct - 3; //the line where the node definition ends
+			//nodeend = ct - 3; //the line where the node definition ends
+			nodeend = ct;
 			elestart = ct + 1; //the line where element definition starts
-		}
-		if (csvColumn[0] == "********************************** S I D E S E T S **********************************") {
-			eleend = ct - 2; //the line where element definition ends
-		}
-		if (csvColumn[0] == "*End Part") {
-			eleend = ct - 1; //the line where element definition ends
 		}
 		if (csvColumn[0] == "*ELSET" || csvColumn[0] == "*Elset") {
 			sidesets_start.push_back(ct + 1); //the line where sidesets (physical group) definition starts
+			if (sidesets_start.size() == 1) {
+				eleend = ct;
+			}
 		}
 		if (csvColumn[0] == "*SURFACE" || csvColumn[0] == "*Surface") {
 			sidesets_end.push_back(ct - 1); //the line where sidesets (physical group) definition ends
 		}
 		std::cout << ct << std::endl;
 	}
-
+	//search back to find where exactly does the node definition ends and redefine the value of nodeend
+	int flag = 0; 
+	while (flag == 0) {
+		for (i = 0; i < output[nodeend][0].size(); i++) {
+			if (isdigit(output[nodeend][0].at(i))) {
+				flag = 1; 
+			}
+		}
+		if (flag == 0) {
+			nodeend = nodeend - 1; 
+		}
+	}
+	//search back to find where exactly does the element definition ends and redefine the value of element
+	flag = 0;
+	while (flag == 0) {
+		for (i = 0; i < output[eleend][0].size(); i++) {
+			if (isdigit(output[eleend][0].at(i))) {
+				flag = 1;
+			}
+		}
+		if (flag == 0) {
+			eleend = eleend - 1;
+		}
+	}
 	int NNODE = nodeend - nodestart + 1; //total node number
 	int NEL = eleend - elestart + 1; //total element number
 	double** GCOORD; //the vector to store the coordinate of nodes
