@@ -249,3 +249,6 @@ ModelManifest.xml
 /Abaqus_to_Gmsh/output.msh
 /Abaqus_to_Gmsh/FSP_1ftbasemesh.inp
 /Abaqus_to_Gmsh/DDG_3ftbasemesh.inp
+/Abaqus_to_Gmsh/Bleich_Sandler_unit.inp
+*.inp
+*.msh

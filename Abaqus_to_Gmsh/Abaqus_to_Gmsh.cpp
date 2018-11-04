@@ -15,13 +15,18 @@
 //This code is used to translate Abaqus input file (mesh) exported from BOLT to Gmsh format
 //The first commit
 
+//User instructions:
+//get rid of the excessive *Elset. 
+
 int main()
 {
+	int debug = 0; 
+
 	int i, j, k;
 	std::string filename;
 	//std::cout << "input the file name here: " << std::endl;
 	//std::getline(std::cin, filename, '\n');
-	filename = "DDG_3ftbasemesh.inp";
+	filename = "frigate_N=1_1ft.inp";
 	std::ifstream infile;
 	infile.open(filename);
 	if (!infile) {
@@ -71,27 +76,35 @@ int main()
 		if (csvColumn[0] == "*SURFACE" || csvColumn[0] == "*Surface") {
 			sidesets_end.push_back(ct - 1); //the line where sidesets (physical group) definition ends
 		}
-		std::cout << ct << std::endl;
+		if (ct % 10000 == 0) {
+			std::cout << ct << std::endl; //output which line is being read
+		}
 	}
-	//search back to find where exactly does the node definition ends and redefine the value of nodeend
+	//search back to find where exactly does the node definition ends and redefine the value of nodeend. 
+	//check if the first string of the line has a number in it. If so, this is the line we are looking for. 
 	int flag = 0; 
 	while (flag == 0) {
 		for (i = 0; i < output[nodeend][0].size(); i++) {
-			if (isdigit(output[nodeend][0].at(i))) {
+			if (isdigit(output[nodeend][0].at(i))) {//check if the corresponding character in the first string is a digit
 				flag = 1; 
 			}
 		}
 		if (flag == 0) {
-			nodeend = nodeend - 1; 
+			nodeend = nodeend - 1;
 		}
 	}
 	//search back to find where exactly does the element definition ends and redefine the value of element
 	flag = 0;
 	while (flag == 0) {
+		/*
 		for (i = 0; i < output[eleend][0].size(); i++) {
 			if (isdigit(output[eleend][0].at(i))) {
 				flag = 1;
 			}
+		}
+		*/
+		if (output[eleend].size() == 1 + 8) {
+			flag = 1;
 		}
 		if (flag == 0) {
 			eleend = eleend - 1;
@@ -110,11 +123,17 @@ int main()
 		IEN[i] = new int[8]; 
 	}
 
+
+	double xoffset = 0.0;
+	double yoffset = 0.0;
+	double zoffset = 0.0;
+
 	for (i = nodestart; i < nodeend + 1; i++) {
-		GCOORD[i - nodestart][0] = stod(output[i][1]);
-		GCOORD[i - nodestart][1] = stod(output[i][2]);
-		GCOORD[i - nodestart][2] = stod(output[i][3]);
+		GCOORD[i - nodestart][0] = stod(output[i][1]) + xoffset;
+		GCOORD[i - nodestart][1] = stod(output[i][2]) + yoffset;
+		GCOORD[i - nodestart][2] = stod(output[i][3]) + zoffset;
 	}
+
 	for (i = elestart; i < eleend + 1; i++) {
 		for (j = 0; j < 8; j++) {
 			IEN[i - elestart][j] = stoi(output[i][j + 1]); //change the string to integer
@@ -128,7 +147,7 @@ int main()
 		std::vector<int> sideset_column;
 		for (j = sidesets_start[i]; j < sidesets_end[i] + 1; j++) { //lines corresponding to the physical group i 
 			//if (output[j].size == 3 && sidesets_end[i] == sidesets_start[i]) { //the element number is expressed as initial,end,internal way (only one line is used) 
-			if (sidesets_end[i] == sidesets_start[i]) {
+			if (sidesets_end[i] == sidesets_start[i]) { //the element number is expressed as initial,end,internal way (only one line is used) 
 				for (k = stoi(output[j][0]); k < stoi(output[j][1]) + 1; k += stoi(output[j][2])) {
 					sideset_column.push_back(k);
 				}
