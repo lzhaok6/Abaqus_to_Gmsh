@@ -26,7 +26,7 @@ int main()
 	std::string filename;
 	//std::cout << "input the file name here: " << std::endl;
 	//std::getline(std::cin, filename, '\n');
-	filename = "frigate_N=1_1ft.inp";
+	filename = "Fluidcolumn_0.25fthex.inp";
 	std::ifstream infile;
 	infile.open(filename);
 	if (!infile) {
@@ -36,7 +36,6 @@ int main()
 	//std::ofstream outFile;
 	//outFile.open("output.msh"); //output Gmsh file
 	std::vector<std::vector<std::string>> output;
-	char buffer[256];
 	std::string csvLine;
 	int ct = -1;
 	std::vector<int> sidesets_start;
@@ -123,10 +122,12 @@ int main()
 		IEN[i] = new int[8]; 
 	}
 
-
 	double xoffset = 0.0;
-	double yoffset = 0.0;
+	double yoffset = -1.144;
 	double zoffset = 0.0;
+	if (xoffset != 0 || yoffset != 0 || zoffset != 0) {
+		std::cout << "Do you really want to use a non-zero offset?" << std::endl; 
+	}
 
 	for (i = nodestart; i < nodeend + 1; i++) {
 		GCOORD[i - nodestart][0] = stod(output[i][1]) + xoffset;
