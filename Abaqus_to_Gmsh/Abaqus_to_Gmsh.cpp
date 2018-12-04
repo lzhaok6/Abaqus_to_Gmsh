@@ -342,9 +342,14 @@ int main()
 	totalele += NEL;
 	outfile << totalele << std::endl;
 	ct = 1;
+	int py_num = 1; 
+	//We want to output the FSI_fluid surface and NRB surface to be just one unified surface respectively (e.g., one wetted surface and one NRB surface). 
 	for (int i = 0; i < num_sidesets; i++) { //different physical groups (3 stands for quad element)
+		if (i > wt_py.size() - 1) {
+			py_num = 2;
+		}
 		for (int j = 0; j < ien_py[i].size(); j++) { //loop through each element in the physical groups
-			outfile << ct << " " << 3 << " " << 2 << " " << i + 1 << " " << 0 << " ";
+			outfile << ct << " " << 3 << " " << 2 << " " << py_num << " " << 0 << " ";
 			if (surface[i] == "S1") { //If the surface is S1
 				outfile << IEN[0][ien_py[i][j] - 1] << " ";
 				outfile << IEN[1][ien_py[i][j] - 1] << " ";
@@ -384,10 +389,11 @@ int main()
 			ct += 1;
 			outfile << std::endl;
 		}
+
 	}
 	//write elements (the whole domain, the last physical group)
 	for (int i = 0; i < NEL; i++) { //5 stands for hexahedral element
-		outfile << ct << " " << 5 << " " << 2 << " " << num_sidesets + 1 << " " << 0 << " ";
+		outfile << ct << " " << 5 << " " << 2 << " " << py_num + 1 << " " << 0 << " ";
 		for (int j = 0; j < 8; j++) {
 			outfile << IEN[j][i] << " ";
 		}
