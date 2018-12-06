@@ -24,7 +24,7 @@ int main()
 {
 
 	/*
-	int debug = 0; 
+	int debug = 0;
 	int i, j, k;
 	std::string filename;
 	//std::cout << "input the file name here: " << std::endl;
@@ -82,13 +82,13 @@ int main()
 			std::cout << ct << std::endl; //output which line is being read
 		}
 	}
-	//search back to find where exactly does the node definition ends and redefine the value of nodeend. 
-	//check if the first string of the line has a number in it. If so, this is the line we are looking for. 
-	int flag = 0; 
+	//search back to find where exactly does the node definition ends and redefine the value of nodeend.
+	//check if the first string of the line has a number in it. If so, this is the line we are looking for.
+	int flag = 0;
 	while (flag == 0) {
 		for (i = 0; i < output[nodeend][0].size(); i++) {
 			if (isdigit(output[nodeend][0].at(i))) {//check if the corresponding character in the first string is a digit
-				flag = 1; 
+				flag = 1;
 			}
 		}
 		if (flag == 0) {
@@ -110,19 +110,19 @@ int main()
 	double** GCOORD; //the vector to store the coordinate of nodes
 	GCOORD = new double*[NNODE];
 	for (i = 0; i < NNODE; i++) {
-		GCOORD[i] = new double[3]; 
+		GCOORD[i] = new double[3];
 	}
 	int**IEN; //element connectivity matrix
 	IEN = new int*[NEL];
 	for (i = 0; i < NEL; i++) {
-		IEN[i] = new int[8]; 
+		IEN[i] = new int[8];
 	}
 
 	double xoffset = 0.0;
 	double yoffset = -1.144;
 	double zoffset = 0.0;
 	if (xoffset != 0 || yoffset != 0 || zoffset != 0) {
-		std::cout << "Do you really want to use a non-zero offset?" << std::endl; 
+		std::cout << "Do you really want to use a non-zero offset?" << std::endl;
 	}
 
 	for (i = nodestart; i < nodeend + 1; i++) {
@@ -142,9 +142,9 @@ int main()
 	std::vector<std::vector<int>> ien_py;
 	for (i = 0; i < num_sidesets; i++) {
 		std::vector<int> sideset_column;
-		for (j = sidesets_start[i]; j < sidesets_end[i] + 1; j++) { //lines corresponding to the physical group i 
-			//if (output[j].size == 3 && sidesets_end[i] == sidesets_start[i]) { //the element number is expressed as initial,end,internal way (only one line is used) 
-			if (sidesets_end[i] == sidesets_start[i]) { //the element number is expressed as initial,end,internal way (only one line is used) 
+		for (j = sidesets_start[i]; j < sidesets_end[i] + 1; j++) { //lines corresponding to the physical group i
+			//if (output[j].size == 3 && sidesets_end[i] == sidesets_start[i]) { //the element number is expressed as initial,end,internal way (only one line is used)
+			if (sidesets_end[i] == sidesets_start[i]) { //the element number is expressed as initial,end,internal way (only one line is used)
 				for (k = stoi(output[j][0]); k < stoi(output[j][1]) + 1; k += stoi(output[j][2])) {
 					sideset_column.push_back(k);
 				}
@@ -158,16 +158,19 @@ int main()
 		ien_py.push_back(sideset_column); //Each sideset_column represents one physical group
 	}
 	*/
+	int glue = 0;
+	std::cout << "Do you want to glue all the NRB and FSI_fluid element sets into one surface? (1=yes 0=no)" << std::endl;
+	std::cin >> glue;
 
-	const char* filename = "C:/Users/lzhaok6/OneDrive/CASE_MESH/DDG_1ftstructuredhex_fs_150m_10m_24m.inp";
+	const char* filename = "C:/Users/lzhaok6/OneDrive/CASE_MESH/FluidColumn_0.333fthex.inp";
 	FILE *fp = fopen(filename, "r");
 	if (!fp) {
 		printf("Cannot open the mesh file");
 		system("PAUSE ");
 	}
 
-	int N = 1; 
-	int NINT = N + 1; 
+	int N = 1;
+	int NINT = N + 1;
 	std::vector<int>numele_py; //total number of element in each physical group
 	int elenode3D = 0;
 	int elenode2D = 0;
@@ -234,7 +237,7 @@ int main()
 		std::string currentline(buf); //convert the char array to string to search the key words
 		std::vector<int>py_ele;
 		if (currentline.find("FSI_fluid") != std::string::npos || currentline.find("NRB") != std::string::npos) { //found the definition element set for FSI_fluid
-																												  //If this line is a surface definition, we store the surface face definition for each FSI_fluid pysical group
+			//If this line is a surface definition, we store the surface face definition for each FSI_fluid pysical group
 			if ((buf[0] == '*' && buf[2] == 'u' && buf[3] == 'r')) {
 				std::cout << "Have you make the element set sequence in surface definition consistent with the element set definition?" << std::endl;
 				system(" PAUSE");
@@ -335,18 +338,23 @@ int main()
 	outfile << "$Elements" << std::endl;
 	//derive the total elements to be written in the file (in all physical groups)
 	int totalele = 0;
-	int num_sidesets = wt_py.size() + nrb_py.size(); 
+	int num_sidesets = wt_py.size() + nrb_py.size();
 	for (int i = 0; i < num_sidesets; i++) {
 		totalele += ien_py[i].size();
 	}
 	totalele += NEL;
 	outfile << totalele << std::endl;
 	ct = 1;
-	int py_num = 1; 
+	int py_num = 1;
 	//We want to output the FSI_fluid surface and NRB surface to be just one unified surface respectively (e.g., one wetted surface and one NRB surface). 
 	for (int i = 0; i < num_sidesets; i++) { //different physical groups (3 stands for quad element)
-		if (i > wt_py.size() - 1) {
-			py_num = 2;
+		if (glue == 1) {
+			if (i > wt_py.size() - 1) {
+				py_num = 2;
+			}
+		}
+		else {
+			py_num = i + 1;
 		}
 		for (int j = 0; j < ien_py[i].size(); j++) { //loop through each element in the physical groups
 			outfile << ct << " " << 3 << " " << 2 << " " << py_num << " " << 0 << " ";
@@ -401,5 +409,5 @@ int main()
 		outfile << std::endl;
 	}
 	outfile << "$EndElements" << std::endl;
-    return 0;
+	return 0;
 }
