@@ -162,7 +162,7 @@ int main()
 	std::cout << "Do you want to glue all the NRB and FSI_fluid element sets into one surface? (1=yes 0=no)" << std::endl;
 	std::cin >> glue;
 
-	const char* filename = "C:/Users/lzhaok6/OneDrive/CASE_MESH/FluidColumn_0.333fthex.inp";
+	const char* filename = "C:/Users/lzhaok6/OneDrive/CASE_MESH/DDG_0.83ftbasemesh_fs_150m_10m_24m.inp";
 	FILE *fp = fopen(filename, "r");
 	if (!fp) {
 		printf("Cannot open the mesh file");
@@ -311,13 +311,19 @@ int main()
 	for (int i = 0; i < NNODE; i++) {
 		GCOORD[i] = new double[3];
 	}
+	double xoff = 0; double yoff = 0; double zoff = 0; 
+	if (xoff != 0 || yoff != 0 || zoff != 0) {
+		std::cout << "Do you really need the position offset?" << std::endl; 
+		system(" PAUSE"); 
+	}
 	for (int i = 0; i < NNODE; i++) {
-		GCOORD[i][0] = VX[i];
-		GCOORD[i][1] = VY[i];
-		GCOORD[i][2] = VZ[i];
+		GCOORD[i][0] = VX[i] + xoff;
+		GCOORD[i][1] = VY[i] + yoff;
+		GCOORD[i][2] = VZ[i] + zoff;
 	}
 
-	//write Gmsh output file
+
+	//Write Gmsh output file
 	std::ofstream outfile;
 	outfile.open("output.msh");
 	if (!outfile) {
